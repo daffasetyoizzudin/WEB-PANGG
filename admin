@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PANGG.CASUALS - Admin Control Panel</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&family=Playfair+Display:ital,wght=0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#F7C948',    // Golden Yellow
+                        secondary: '#1F4D3A',  // Dark Green Luxury
+                        darkText: '#222222',   // Premium Dark Text
+                        lightGray: '#F9F9F9',  // Clean BG
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for beautiful lists */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F1F1F1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1F4D3A;
+            border-radius: 2px;
+        }
+        /* Loader Overlay styling */
+        .loader-overlay {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(2px);
+        }
+    </style>
+</head>
+<body class="bg-lightGray text-darkText font-sans selection:bg-secondary selection:text-white min-h-screen flex flex-col md:flex-row relative overflow-x-hidden">
+
+    <!-- GLOBAL LOADING INDICATOR -->
+    <div id="globalLoader" class="fixed inset-0 z-[100] flex items-center justify-center loader-overlay hidden">
+        <div class="flex flex-col items-center gap-3 bg-white p-6 rounded-2xl shadow-xl border border-gray-100">
+            <span class="animate-spin rounded-full h-10 w-10 border-b-2 border-secondary"></span>
+            <p class="text-xs font-bold text-secondary tracking-wider uppercase">Menghubungkan ke Google Sheets...</p>
+        </div>
+    </div>
+
+    <!-- LOGIN SCREEN OVERLAY -->
+    <div id="loginScreen" class="fixed inset-0 z-50 bg-secondary flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-10 w-full max-w-md space-y-6 border border-emerald-900/10 transform transition-all">
+            <div class="text-center space-y-2">
+                <!-- SATU WARNA HIJAU BOTOL -->
+                <h2 class="font-serif text-3xl font-bold text-secondary">PANGG.CASUALS</h2>
+                <p class="text-xs text-gray-400 tracking-wider uppercase font-semibold">Admin Panel Authentication</p>
+                <div class="w-12 h-1 bg-primary mx-auto mt-2"></div>
+            </div>
+            
+            <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Username Admin</label>
+                    <input type="text" id="loginUser" required placeholder="Masukkan username" class="w-full text-xs bg-lightGray border border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-secondary font-semibold">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Password</label>
+                    <input type="password" id="loginPass" required placeholder="Masukkan password" class="w-full text-xs bg-lightGray border border-gray-200 px-4 py-3 rounded-xl focus:outline-none focus:border-secondary font-semibold">
+                </div>
+                
+                <button type="submit" id="btnLoginSubmit" class="w-full bg-secondary text-primary font-bold text-xs tracking-widest py-4 rounded-xl transition hover:opacity-95 uppercase flex items-center justify-center gap-2">
+                    MASUK KE PANEL <i data-lucide="log-in" class="w-4 h-4"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD WRAPPER -->
+    <div id="mainDashboardWrapper" class="flex-grow flex flex-col md:flex-row w-full hidden relative">
+        
+        <!-- MOBILE HEADER BAR -->
+        <div class="md:hidden bg-secondary text-white px-4 py-3 flex items-center justify-between border-b border-emerald-900/40 sticky top-0 z-30 shadow-md">
+            <div class="space-y-0.5">
+                <h1 class="font-serif text-base font-bold tracking-tight text-primary">PANGG.CASUALS</h1>
+                <p class="text-[9px] text-emerald-200 tracking-widest uppercase font-semibold">Control Panel</p>
+            </div>
+            <button onclick="toggleMobileSidebar()" class="p-2 text-emerald-100 hover:text-white rounded-lg hover:bg-emerald-800 transition">
+                <i data-lucide="menu" id="mobileMenuIcon" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- SIDEBAR BACKDROP IN MOBILE -->
+        <div id="sidebarBackdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-black/60 z-40 hidden md:hidden transition-opacity"></div>
+
+        <!-- SIDEBAR NAVIGATION DRAWER -->
+        <aside id="adminSidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-secondary text-white shrink-0 flex flex-col justify-between border-r border-emerald-900/30 transform -translate-x-full transition-transform duration-300 md:translate-x-0 md:sticky md:top-0 md:h-screen md:z-20">
+            <div>
+                <!-- Sidebar Header (Desktop) -->
+                <div class="p-6 border-b border-emerald-900/40 hidden md:flex items-center justify-between">
+                    <div class="space-y-1">
+                        <h1 class="font-serif text-lg font-bold tracking-tight text-primary">PANGG.CASUALS</h1>
+                        <p class="text-[10px] text-emerald-200 tracking-widest uppercase font-semibold">Admin Panel</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-lg bg-emerald-800 flex items-center justify-center text-primary">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    </div>
+                </div>
+
+                <!-- Nav Links -->
+                <nav class="p-4 space-y-1.5 pt-10 md:pt-4">
+                    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-wider uppercase transition bg-primary text-secondary">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i> DASHBOARD
+                    </button>
+                    <button onclick="switchTab('products')" id="nav-products" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-wider uppercase transition text-emerald-100 hover:bg-emerald-800/40">
+                        <i data-lucide="package" class="w-4 h-4"></i> KELOLA PRODUK
+                    </button>
+                    <button onclick="switchTab('orders')" id="nav-orders" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-wider uppercase transition text-emerald-100 hover:bg-emerald-800/40">
+                        <i data-lucide="shopping-cart" class="w-4 h-4"></i> KELOLA PESANAN
+                    </button>
+                    <button onclick="switchTab('settings')" id="nav-settings" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-wider uppercase transition text-emerald-100 hover:bg-emerald-800/40">
+                        <i data-lucide="settings" class="w-4 h-4"></i> PENGATURAN TOKO
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Logout & Footer Section -->
+            <div class="p-4 border-t border-emerald-900/40 space-y-3 mb-16 md:mb-0">
+                <button onclick="handleLogout()" class="w-full flex items-center justify-center gap-2 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white px-4 py-2.5 rounded-lg text-xs font-bold tracking-wider uppercase transition">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> LOGOUT SESS
+                </button>
+                <div class="text-center text-[10px] text-emerald-200/60 font-light">
+                    &copy; 2026 PANGG.CASUALS Store Engine.
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="flex-grow p-4 sm:p-8 overflow-y-auto max-w-7xl mx-auto w-full space-y-6">
+            
+            <!-- DASHBOARD STATS TAB -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <div class="flex justify-between items-center border-b border-gray-200 pb-4">
+                    <div>
+                        <h2 class="font-serif text-2xl sm:text-3xl font-bold text-secondary">Realtime Overview</h2>
+                        <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5">Pantau performa produk dan penjualan PANGG.CASUALS Anda.</p>
+                    </div>
+                    <button onclick="fetchStats()" class="p-2.5 bg-white border border-gray-200 rounded-xl text-secondary hover:bg-gray-50 transition shadow-sm" title="Refresh Data">
+                        <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+                    <!-- Total Produk -->
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-[9px] sm:text-[10px] text-gray-400 font-bold tracking-wider uppercase">Total Produk</span>
+                            <p id="statTotalProducts" class="text-xl sm:text-3xl font-extrabold text-secondary">0</p>
+                        </div>
+                        <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-secondary/5 text-secondary flex items-center justify-center">
+                            <i data-lucide="box" class="w-4 h-4 sm:w-6 sm:h-6"></i>
+                        </div>
+                    </div>
+                    <!-- Total Order -->
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-[9px] sm:text-[10px] text-gray-400 font-bold tracking-wider uppercase">Total Order</span>
+                            <p id="statTotalOrders" class="text-xl sm:text-3xl font-extrabold text-secondary">0</p>
+                        </div>
+                        <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-primary/10 text-secondary flex items-center justify-center">
+                            <i data-lucide="shopping-bag" class="w-4 h-4 sm:w-6 sm:h-6 text-yellow-600"></i>
+                        </div>
+                    </div>
+                    <!-- Pending Order -->
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-[9px] sm:text-[10px] text-gray-400 font-bold tracking-wider uppercase">Pending Order</span>
+                            <p id="statPendingOrders" class="text-xl sm:text-3xl font-extrabold text-red-600">0</p>
+                        </div>
+                        <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
+                            <i data-lucide="clock" class="w-4 h-4 sm:w-6 sm:h-6"></i>
+                        </div>
+                    </div>
+                    <!-- Sold Out -->
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-1">
+                            <span class="text-[9px] sm:text-[10px] text-gray-400 font-bold tracking-wider uppercase">Stok Habis</span>
+                            <p id="statSoldOut" class="text-xl sm:text-3xl font-extrabold text-amber-600">0</p>
+                        </div>
+                        <div class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <i data-lucide="package-x" class="w-4 h-4 sm:w-6 sm:h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONNECTION DIAGNOSTICS CARD -->
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-serif text-xs sm:text-sm font-bold text-secondary flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span> 
+                            Integrasi Database Google Sheets
+                        </h3>
+                        <span id="diagnosticStatusText" class="text-[8px] sm:text-[9px] bg-emerald-50 text-emerald-600 font-bold px-2.5 py-1 rounded-full border border-emerald-100 uppercase tracking-widest">Connected</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="bg-lightGray p-4 rounded-xl space-y-1">
+                            <span class="text-gray-400 block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Nama Google Sheet Aktif</span>
+                            <p id="diagSheetName" class="font-bold text-secondary truncate">Memuat informasi...</p>
+                        </div>
+                        <div class="bg-lightGray p-4 rounded-xl space-y-1 flex flex-col justify-center">
+                            <span class="text-gray-400 block text-[9px] sm:text-[10px] font-bold uppercase tracking-wider mb-1">Aksi Cepat Database</span>
+                            <a id="diagSheetUrl" href="#" target="_blank" class="font-bold text-emerald-700 hover:underline inline-flex items-center gap-1">
+                                Buka Google Sheet Database <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CATEGORY STOCK DISTRIBUTION BAR CHART -->
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                    <h3 class="font-serif text-base sm:text-lg font-bold text-secondary">Distribusi Stok per Kategori</h3>
+                    <div id="categoryStockDistributionArea" class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+                        <div class="bg-lightGray p-4 rounded-xl flex flex-col justify-center items-center text-gray-400">
+                            <p>Memproses visualisasi data stok...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Shortcuts -->
+                <div class="bg-white p-4 sm:p-6 rounded-2xl border border-gray-100 shadow-sm space-y-4">
+                    <h3 class="font-serif text-base sm:text-lg font-bold text-secondary">Akses Cepat Pengelolaan</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button onclick="switchTab('products'); openProductModal();" class="flex items-center gap-3 p-4 bg-lightGray rounded-xl hover:bg-secondary/5 border border-gray-100 transition group text-left">
+                            <div class="w-10 h-10 rounded-lg bg-secondary text-primary flex items-center justify-center shrink-0">
+                                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-secondary">Tambah Produk</p>
+                                <p class="text-[10px] text-gray-400">Unggah foto & size baru</p>
+                            </div>
+                        </button>
+                        <button onclick="switchTab('orders')" class="flex items-center gap-3 p-4 bg-lightGray rounded-xl hover:bg-secondary/5 border border-gray-100 transition group text-left">
+                            <div class="w-10 h-10 rounded-lg bg-primary text-secondary flex items-center justify-center shrink-0">
+                                <i data-lucide="eye" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-secondary">Lihat Order Masuk</p>
+                                <p class="text-[10px] text-gray-400">Verifikasi bukti transfer</p>
+                            </div>
+                        </button>
+                        <button onclick="switchTab('settings')" class="flex items-center gap-3 p-4 bg-lightGray rounded-xl hover:bg-secondary/5 border border-gray-100 transition group text-left">
+                            <div class="w-10 h-10 rounded-lg bg-gray-200 text-secondary flex items-center justify-center shrink-0">
+                                <i data-lucide="sliders" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-secondary">Pengaturan Store</p>
+                                <p class="text-[10px] text-gray-400">Ubah QRIS, Logo, & Voucher</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- KELOLA PRODUK TAB -->
+            <section id="tab-products" class="tab-content space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+                    <div>
+                        <h2 class="font-serif text-2xl sm:text-3xl font-bold text-secondary">Kelola Produk Toko</h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Tambah, edit informasi, and arsipkan katalog produk aktif.</p>
+                    </div>
+                    <button onclick="openProductModal()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-secondary text-primary font-bold text-xs tracking-wider uppercase px-5 py-3.5 rounded-xl shadow-lg transition hover:opacity-95">
+                        <i data-lucide="plus" class="w-4 h-4"></i> TAMBAH PRODUK BARU
+                    </button>
+                </div>
+
+                <!-- Search and Category Filter for Products -->
+                <div class="flex flex-col sm:flex-row gap-3 bg-white p-4 rounded-xl border border-gray-100 shadow-sm justify-between items-center">
+                    <div class="relative w-full sm:w-72">
+                        <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                        <input type="text" id="adminProductSearch" oninput="filterAdminProducts()" placeholder="Cari nama artikel..." class="w-full text-xs bg-lightGray border border-transparent focus:border-secondary pl-9 pr-3 py-2.5 rounded-lg focus:outline-none">
+                    </div>
+                    <div class="flex items-center gap-2 text-xs w-full sm:w-auto">
+                        <span class="text-gray-400 font-bold">Kategori:</span>
+                        <select id="adminProductCategoryFilter" onchange="filterAdminProducts()" class="bg-lightGray border-0 text-secondary font-bold text-xs py-2 px-3 rounded-lg focus:outline-none">
+                            <option value="ALL">Semua Kategori</option>
+                            <option value="TEE">TEE</option>
+                            <option value="HOODIE">HOODIE</option>
+                            <option value="OVERSHIRT">OVERSHIRT</option>
+                            <option value="CREWNECK">CREWNECK</option>
+                            <option value="JACKET">JACKET</option>
+                            <option value="PANTS">PANTS</option>
+                            <option value="HAT">HAT</option>
+                            <option value="SHOES">SHOES</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Product List Area -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-left border-collapse min-w-[750px]">
+                            <thead>
+                                <tr class="bg-lightGray border-b border-gray-100 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                    <th class="p-4">Produk</th>
+                                    <th class="p-4">Kategori</th>
+                                    <th class="p-4">Harga (Final)</th>
+                                    <th class="p-4 text-center">Ukuran</th>
+                                    <th class="p-4 text-center">Stok</th>
+                                    <th class="p-4 text-center">Status</th>
+                                    <th class="p-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblProductBody" class="divide-y divide-gray-100 text-xs text-secondary font-medium">
+                                <!-- Diisi dinamis oleh Javascript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- KELOLA PESANAN TAB -->
+            <section id="tab-orders" class="tab-content space-y-6 hidden">
+                <div class="border-b border-gray-200 pb-4">
+                    <h2 class="font-serif text-2xl sm:text-3xl font-bold text-secondary">Kelola Pesanan Masuk</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Kelola transaksi pembelian, konfirmasi pembayaran QRIS, dan status pemrosesan paket.</p>
+                </div>
+
+                <!-- Search and Status Filter for Orders -->
+                <div class="flex flex-col sm:flex-row gap-3 bg-white p-4 rounded-xl border border-gray-100 shadow-sm justify-between items-center">
+                    <div class="relative w-full sm:w-72">
+                        <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2"></i>
+                        <input type="text" id="adminOrderSearch" oninput="filterAdminOrders()" placeholder="Cari nama, Order ID, WA..." class="w-full text-xs bg-lightGray border border-transparent focus:border-secondary pl-9 pr-3 py-2.5 rounded-lg focus:outline-none">
+                    </div>
+                    <div class="flex items-center gap-2 text-xs w-full sm:w-auto">
+                        <span class="text-gray-400 font-bold">Status:</span>
+                        <select id="adminOrderStatusFilter" onchange="filterAdminOrders()" class="bg-lightGray border-0 text-secondary font-bold text-xs py-2 px-3 rounded-lg focus:outline-none">
+                            <option value="ALL">Semua Status</option>
+                            <option value="MENUNGGU PEMBAYARAN">MENUNGGU PEMBAYARAN</option>
+                            <option value="MENUNGGU VERIFIKASI">MENUNGGU VERIFIKASI</option>
+                            <option value="DIPROSES">DIPROSES</option>
+                            <option value="DIKIRIM">DIKIRIM</option>
+                            <option value="SELESAI">SELESAI</option>
+                            <option value="DIBATALKAN">DIBATALKAN</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Orders Table Area -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-left border-collapse min-w-[950px]">
+                            <thead>
+                                <tr class="bg-lightGray border-b border-gray-100 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                    <th class="p-4">Order ID / Tanggal</th>
+                                    <th class="p-4">Pembeli</th>
+                                    <th class="p-4">Detail Produk</th>
+                                    <th class="p-4 text-right">Total Tagihan</th>
+                                    <th class="p-4 text-center">Bukti Transfer</th>
+                                    <th class="p-4 text-center">Status</th>
+                                    <th class="p-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tblOrdersBody" class="divide-y divide-gray-100 text-xs text-secondary font-medium">
+                                <!-- Diisi dinamis oleh Javascript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CONFIG / SETTINGS TAB -->
+            <section id="tab-settings" class="tab-content space-y-6 hidden">
+                <div class="border-b border-gray-200 pb-4">
+                    <h2 class="font-serif text-2xl sm:text-3xl font-bold text-secondary">Pengaturan Storefront</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Ubah identitas visual brand, QRIS merchant pembayaran, kredensial login, dan tautan sosial media toko Anda.</p>
+                </div>
+
+                <!-- Settings Form Grid (KEMBALI PAKAI INPUT FILE DENGAN TEKNOLOGI CLIENT-SIDE COMPRESSION ANTI-ERRORS 50K) -->
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-8 max-w-3xl">
+                    <form id="settingsForm" onsubmit="saveStoreSettings(event)" class="space-y-6">
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <!-- Logo Brand via File -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold tracking-wider text-secondary uppercase">Logo Brand</label>
+                                <div class="flex items-center gap-4">
+                                    <div class="w-16 h-16 border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center bg-lightGray shrink-0">
+                                        <img id="logoSettingPreview" src="https://images.unsplash.com/photo-1595079676339-1534801ad6cf?auto=format&fit=crop&q=80&w=200" alt="Logo Preview" class="max-w-full max-h-full object-contain" onerror="this.src='https://placehold.co/200?text=PANGG'">
+                                    </div>
+                                    <div class="flex-1">
+                                        <input type="file" id="logoSettingInput" accept="image/*" onchange="previewAndCompressSettingImage(this, 'logoSettingPreview', 'Logo')" class="text-[11px] text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-secondary/10 file:text-secondary hover:file:bg-secondary/20">
+                                        <p class="text-[9px] text-gray-400 mt-1">Logo brand. Otomatis dikompres & disimpan ke Drive.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- QRIS Merchant via File -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold tracking-wider text-secondary uppercase">QRIS Merchant</label>
+                                <div class="flex items-center gap-4">
+                                    <div class="w-16 h-16 border border-gray-200 rounded-lg overflow-hidden flex items-center justify-center bg-lightGray shrink-0">
+                                        <img id="qrisSettingPreview" src="https://images.unsplash.com/photo-1595079676339-1534801ad6cf?auto=format&fit=crop&q=80&w=200" alt="QRIS Preview" class="max-w-full max-h-full object-contain" onerror="this.src='https://placehold.co/200?text=QRIS'">
+                                    </div>
+                                    <div class="flex-1">
+                                        <input type="file" id="qrisSettingInput" accept="image/*" onchange="previewAndCompressSettingImage(this, 'qrisSettingPreview', 'QRIS')" class="text-[11px] text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-secondary/10 file:text-secondary hover:file:bg-secondary/20">
+                                        <p class="text-[9px] text-gray-400 mt-1">Scan barcode QRIS. Otomatis dikompres & disimpan ke Drive.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Banner via File -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold tracking-wider text-secondary uppercase">Hero Campaign Banner</label>
+                            <div class="border border-gray-200 rounded-xl overflow-hidden aspect-[3/1] bg-lightGray max-h-48 flex items-center justify-center">
+                                <img id="bannerSettingPreview" src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1200" alt="Banner Preview" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/1200x400?text=Banner'">
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <input type="file" id="bannerSettingInput" accept="image/*" onchange="previewAndCompressSettingImage(this, 'bannerSettingPreview', 'Banner')" class="text-[11px] text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:text-[11px] file:font-semibold file:bg-secondary/10 file:text-secondary hover:file:bg-secondary/20">
+                                <p class="text-[9px] text-gray-400">Dimensi landscape. Otomatis dikompres & disimpan ke Drive.</p>
+                            </div>
+                        </div>
+
+                        <hr class="border-gray-100">
+
+                        <!-- KREDENSIAL LOGIN ADMIN SECTION -->
+                        <div class="space-y-4 bg-lightGray p-4 rounded-xl border border-gray-200">
+                            <h3 class="text-xs font-bold text-secondary tracking-wider uppercase flex items-center gap-2">
+                                <i data-lucide="lock" class="w-4 h-4 text-primary"></i> Kredensial Login Admin
+                            </h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Username Admin Baru</label>
+                                    <input type="text" id="setAdminUser" placeholder="admin" required class="w-full text-xs bg-white border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold text-secondary">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Password Baru</label>
+                                    <input type="password" id="setAdminPass" placeholder="•••••" required class="w-full text-xs bg-white border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold text-secondary">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Social / WA Configurations -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">WhatsApp Admin global *</label>
+                                <input type="text" id="setWA" placeholder="Contoh: 628123456789" required class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Instagram Username</label>
+                                <input type="text" id="setIG" placeholder="Username tanpa @" class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">TikTok Username</label>
+                                <input type="text" id="setTikTok" placeholder="Username tanpa @" class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary">
+                            </div>
+                        </div>
+
+                        <!-- KELOLA KODE VOUCHER DARI DATABASE -->
+                        <div class="space-y-2 bg-lightGray p-4 rounded-xl border border-gray-200">
+                            <label class="block text-xs font-bold tracking-wider text-secondary uppercase flex items-center gap-2">
+                                <i data-lucide="ticket" class="w-4 h-4 text-primary"></i> Daftar Kode Voucher Aktif
+                            </label>
+                            <input type="text" id="setVouchers" placeholder="Contoh: PANGG10:10,STREET50:50000" class="w-full text-xs bg-white border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold text-secondary">
+                            <p class="text-[9px] text-gray-400 leading-relaxed">
+                                Format: <strong>KODE:POTONGAN</strong> (pisahkan dengan koma). <br>
+                                Jika nilai potongan <strong>1 s/d 100</strong> akan dihitung sebagai <strong>Persen (%)</strong>. Jika di atas 100 akan dihitung sebagai <strong>Potongan Nominal (Rupiah)</strong>.
+                            </p>
+                        </div>
+
+                        <!-- Submit Settings -->
+                        <button type="submit" id="btnSaveSettings" class="w-full sm:w-auto bg-secondary text-primary font-bold text-xs tracking-widest px-8 py-3.5 rounded-xl transition hover:opacity-95 uppercase flex items-center justify-center gap-2">
+                            SIMPAN PENGATURAN TOKO <i data-lucide="check" class="w-4 h-4"></i>
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- PRODUCT ADD / EDIT MODAL -->
+    <div id="productModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center p-4 text-center">
+            <div onclick="closeProductModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all my-8 w-full max-w-4xl p-5 sm:p-8 space-y-6">
+                <!-- Modal Close -->
+                <button onclick="closeProductModal()" class="absolute top-4 right-4 text-gray-400 hover:text-darkText z-10 p-2 hover:bg-gray-100 rounded-full">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+
+                <!-- Header -->
+                <div>
+                    <h3 id="productModalTitle" class="font-serif text-xl sm:text-2xl text-secondary font-bold">Tambah Produk Baru</h3>
+                    <p class="text-xs text-gray-400">Atur rincian artikel kasual premium baru Anda dengan presisi.</p>
+                </div>
+
+                <form id="productForm" onsubmit="handleProductSubmit(event)" class="space-y-6">
+                    <input type="hidden" id="prodID">
+
+                    <!-- Form Row 1 -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Nama Artikel Produk *</label>
+                            <input type="text" id="prodNama" required class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Kategori *</label>
+                            <select id="prodKategori" required onchange="adaptSizeOption(this.value)" class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold">
+                                <option value="TEE">TEE</option>
+                                <option value="HOODIE">HOODIE</option>
+                                <option value="OVERSHIRT">OVERSHIRT</option>
+                                <option value="CREWNECK">CREWNECK</option>
+                                <option value="JACKET">JACKET</option>
+                                <option value="PANTS">PANTS</option>
+                                <option value="HAT">HAT</option>
+                                <option value="SHOES">SHOES</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Pricing Row -->
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Harga Asli *</label>
+                            <input type="number" id="prodHarga" required oninput="calculateFinalPrice()" placeholder="Rp" class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Diskon (%)</label>
+                            <input type="number" id="prodDiskon" min="0" max="100" oninput="calculateFinalPrice()" placeholder="%" class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Harga Final (Otomatis)</label>
+                            <input type="text" id="prodHargaFinal" readonly placeholder="Rp 0" class="w-full text-xs bg-gray-100 border border-gray-200 px-3 py-2.5 rounded-lg text-secondary font-bold focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Stok Qty *</label>
+                            <input type="number" id="prodStok" required min="0" placeholder="1" class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold">
+                        </div>
+                    </div>
+
+                    <!-- Size Selection Dynamic -->
+                    <div class="space-y-2">
+                        <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Pilihan Ukuran *</label>
+                        <div id="sizeOptionsArea" class="flex flex-wrap gap-2 py-1">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Condition & Status -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Kondisi Barang *</label>
+                            <input type="text" id="prodKondisi" placeholder="Contoh: 9.8/10 - Brand New With Tag" required class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Status Visibilitas</label>
+                            <select id="prodStatus" class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold">
+                                <option value="AKTIF">AKTIF (Tampil di Store)</option>
+                                <option value="ARSIP">ARSIP (Disembunyikan)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Deskripsi Detail Artikel *</label>
+                        <textarea id="prodDeskripsi" required rows="3" placeholder="Informasi detail bahan, material, model, etc..." class="w-full text-xs bg-lightGray border border-gray-200 p-3 rounded-lg focus:outline-none focus:border-secondary"></textarea>
+                    </div>
+
+                    <!-- Multiple Image Uploads (Up to 10 Photos) -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-bold tracking-wider text-secondary uppercase">Foto Produk (Maksimal 10 File)</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="photoUploadersArea">
+                            <!-- Dinamis diisi 10 buah slot upload -->
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit" id="btnSubmitProduct" class="w-full bg-secondary text-primary font-bold text-xs tracking-widest py-4 rounded-xl transition hover:opacity-95 uppercase flex items-center justify-center gap-2 shadow-lg">
+                        SIMPAN PRODUK <i data-lucide="save" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- DETAIL BUKTI TRANSFER MODAL PREVIEW -->
+    <div id="proofModal" class="fixed inset-0 z-50 overflow-y-auto hidden animate-fade-in" aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center p-4">
+            <div onclick="closeProofModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+            <div class="relative bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 z-10 shadow-2xl">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <h3 class="font-bold text-secondary text-sm">Bukti Transfer Pembeli</h3>
+                    <button onclick="closeProofModal()" class="text-gray-400 hover:text-darkText"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div class="aspect-square bg-lightGray rounded-xl overflow-hidden border flex items-center justify-center shadow-inner">
+                    <img id="proofModalImage" src="" class="max-h-96 object-contain w-full">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COURIER & RESI INPUT MODAL -->
+    <div id="resiInputModal" class="fixed inset-0 z-[60] overflow-y-auto hidden" aria-modal="true">
+        <div class="flex min-h-screen items-center justify-center p-4 text-center">
+            <div onclick="closeResiModal()" class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+            <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all my-8 w-full max-w-md p-6 space-y-4 z-10">
+                <button onclick="closeResiModal()" class="absolute top-4 right-4 text-gray-400 hover:text-darkText p-2 hover:bg-gray-100 rounded-full">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+                <div>
+                    <h3 class="font-serif text-lg text-secondary font-bold">Input Resi Pengiriman</h3>
+                    <p class="text-xs text-gray-400">Masukkan detail pengiriman untuk status DIKIRIM.</p>
+                </div>
+                <form id="resiInputForm" onsubmit="submitResiStatus(event)" class="space-y-4">
+                    <input type="hidden" id="resiOrderId">
+                    <input type="hidden" id="resiStatusValue">
+                    <div>
+                        <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Pilih Kurir / Ekspedisi</label>
+                        <select id="resiKurir" required class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold">
+                            <option value="JNT">J&T Express</option>
+                            <option value="JNE">JNE</option>
+                            <option value="SICEPAT">SiCepat</option>
+                            <option value="ANTERAJA">Anteraja</option>
+                            <option value="TIKI">TIKI</option>
+                            <option value="POS">Pos Indonesia</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Nomor Resi Pengiriman (AWB)</label>
+                        <input type="text" id="resiNumber" required placeholder="Masukkan nomor resi asli" class="w-full text-xs bg-lightGray border border-gray-200 px-3 py-2.5 rounded-lg focus:outline-none focus:border-secondary font-semibold">
+                    </div>
+                    <button type="submit" class="w-full bg-secondary text-primary font-bold text-xs tracking-widest py-3 rounded-xl transition hover:opacity-95 uppercase flex items-center justify-center gap-2">
+                        KONFIRMASI & KIRIM <i data-lucide="truck" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM TOAST NOTIFICATION -->
+    <div id="customToast" class="fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 transition-all duration-300 pointer-events-none bg-secondary text-white px-5 py-3 rounded-xl shadow-2xl border border-primary flex items-center gap-3">
+        <div class="w-6 h-6 rounded-full bg-primary text-secondary flex items-center justify-center font-bold text-xs">!</div>
+        <span id="toastMessage" class="text-xs font-semibold">Tindakan Berhasil dilakukan.</span>
+    </div>
+
+    <!-- JAVASCRIPT CONTROL ENGINE -->
+    <script>
+        // SAFE STORAGE HELPER (Solusi tuntas sandbox iframe Google Apps Script)
+        const StorageHelper = {
+            set: function(key, value) {
+                try {
+                    sessionStorage.setItem(key, value);
+                } catch (e) {
+                    console.warn("Storage diblokir oleh sandbox iframe. Menggunakan fallback memori lokal.", e);
+                    window[key] = value;
+                }
+            },
+            get: function(key) {
+                try {
+                    return sessionStorage.getItem(key);
+                } catch (e) {
+                    return window[key] || null;
+                }
+            },
+            remove: function(key) {
+                try {
+                    sessionStorage.removeItem(key);
+                } catch (e) {
+                    delete window[key];
+                }
+            }
+        };
+
+        function toPublicDriveUrl(url) {
+            if (!url) return "";
+            url = url.toString().trim();
+            if (url.includes("googleusercontent.com") || url.includes("drive.google.com")) {
+                let id = "";
+                const matchFileD = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                const matchUcId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (matchFileD && matchFileD[1]) {
+                    id = matchFileD[1];
+                } else if (matchUcId && matchUcId[1]) {
+                    id = matchUcId[1];
+                }
+                if (id) {
+                    return "https://lh3.googleusercontent.com/d/" + id;
+                }
+            }
+            return url;
+        }
+
+        // Fallback Mocking jika dicoba di sandbox luar (Canvas)
+        if (typeof google === "undefined") {
+            window.google = {
+                script: {
+                    run: {
+                        withSuccessHandler: function(successCallback) {
+                            return {
+                                withFailureHandler: function(failureCallback) {
+                                    return {
+                                        getSystemDiagnosticsGAS: function() {
+                                            setTimeout(() => {
+                                                successCallback({
+                                                    success: true,
+                                                    sheetName: "Database PANGG.CASUALS (Mock Mode)",
+                                                    sheetUrl: "https://docs.google.com/spreadsheets/d/mock-spreadsheet-id/edit"
+                                                });
+                                            }, 300);
+                                        },
+                                        verifyLoginGAS: function(u, p) {
+                                            setTimeout(() => {
+                                                if (u.trim() === "admin" && p.trim() === "12345") {
+                                                    successCallback({ success: true, message: "Login Berhasil (Mock)!" });
+                                                } else {
+                                                    successCallback({ success: false, message: "Username atau password salah (Mock)!" });
+                                                }
+                                            }, 300);
+                                        },
+                                        getDashboardStatsGAS: function() {
+                                            setTimeout(() => {
+                                                successCallback({
+                                                    success: true,
+                                                    data: { totalProducts: 1, totalOrders: 1, pendingOrders: 1, soldOutProducts: 0 }
+                                                });
+                                            }, 300);
+                                        },
+                                        getSettingsGAS: function() {
+                                            setTimeout(() => {
+                                                successCallback({
+                                                    success: true,
+                                                    data: {
+                                                        Logo: "",
+                                                        Banner: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1200",
+                                                        QRIS: "https://images.unsplash.com/photo-1595079676339-1534801ad6cf?auto=format&fit=crop&q=80&w=200",
+                                                        AdminWhatsapp: "6281234567890",
+                                                        Instagram: "pangg.casuals",
+                                                        TikTok: "pangg.casuals",
+                                                        AdminUser: "admin",
+                                                        AdminPass: "12345"
+                                                    }
+                                                });
+                                            }, 300);
+                                        },
+                                        getProductsAdminGAS: function() {
+                                            setTimeout(() => {
+                                                successCallback({
+                                                    success: true,
+                                                    data: [
+                                                        { ID: "PROD-1781596", Nama: "ADIDAS SAMBA", Harga: 1800000, Diskon: 10, HargaFinal: 1620000, Kategori: "SHOES", Ukuran: "40", Deskripsi: "GOD QUALITY", Kondisi: "BRAND NEEW", Stok: 1, Status: "AKTIF", Foto1: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=600" }
+                                                    ]
+                                                });
+                                            }, 300);
+                                        },
+                                        getOrdersGAS: function() {
+                                            setTimeout(() => {
+                                                successCallback({
+                                                    success: true,
+                                                    data: [
+                                                        { ID: "ORD-1718509001", NamaPembeli: "Andi Wijaya", WhatsApp: "081234567890", Alamat: "Jl. Sudirman No. 12", Provinsi: "DKI Jakarta", Catatan: "Ukuran XL ya", Produk: "[PROD-1781596] ADIDAS SAMBA - Size 40 (1x)", Total: 1620000, BuktiTransfer: "", Status: "MENUNGGU PEMBAYARAN", Tanggal: "2026-06-16 11:00:00" }
+                                                    ]
+                                                });
+                                            }, 300);
+                                        },
+                                        createProductGAS: function(data) {
+                                            setTimeout(() => { successCallback({ success: true, id: "PROD-MOCK", message: "Produk berhasil ditambahkan (Mock)." }); }, 300);
+                                        },
+                                        updateProductGAS: function(data) {
+                                            setTimeout(() => { successCallback({ success: true, id: data.ID, message: "Produk berhasil diperbarui (Mock)." }); }, 300);
+                                        },
+                                        uploadProductPhotoGAS: function(id, idx, base64) {
+                                            setTimeout(() => { successCallback({ success: true, message: "Foto " + idx + " diunggah (Mock)." }); }, 200);
+                                        },
+                                        deleteProductGAS: function(id) {
+                                            setTimeout(() => { successCallback({ success: true, message: "Produk berhasil diarsipkan (Mock)." }); }, 300);
+                                        },
+                                        updateOrderStatusGAS: function(orderId, status) {
+                                            setTimeout(() => { successCallback({ success: true, message: "Status pesanan berhasil diperbarui (Mock)." }); }, 300);
+                                        },
+                                        updateSettingsGAS: function(data) {
+                                            setTimeout(() => { successCallback({ success: true, message: "Pengaturan berhasil diperbarui (Mock)." }); }, 300);
+                                        }
+                                    };
+                                }
+                            };
+                        }
+                    }
+                }
+            };
+        }
+
+        // Global State Data
+        let globalProducts = [];
+        let globalOrders = [];
+        let globalSettings = {};
+
+        const CLOTHING_SIZES = ["10", "12", "14", "XS", "S", "M", "L", "XL", "2XL", "3XL", "FREE SIZE"];
+        const SHOE_SIZES = ["36", "37", "38", "39", "40", "41", "42", "43", "44"];
+
+        let productFilesBase64 = {}; 
+        let settingsFilesBase64 = {}; // Menyimpan data base64 aset pengaturan baru
+        let selectedProductSizes = [];
+
+        // Fungsi normalisasi pintar agar case-insensitive terhadap nama kolom/properti spreadsheet
+        const normalizeObjectKeys = (obj) => {
+            if (!obj) return {};
+            let normalized = {};
+            Object.keys(obj).forEach(key => {
+                let cleanKey = key.replace(/\s+/g, '').toLowerCase();
+                normalized[cleanKey] = obj[key];
+            });
+            return normalized;
+        };
+
+        window.addEventListener("DOMContentLoaded", () => {
+            checkAuthSession();
+            lucide.createIcons();
+        });
+
+        // Loading Overlay Helpers
+        function showLoader() {
+            document.getElementById("globalLoader").classList.remove("hidden");
+        }
+        function hideLoader() {
+            document.getElementById("globalLoader").classList.add("hidden");
+        }
+
+        // TOGGLE MOBILE SIDEBAR DRAWER
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById("adminSidebar");
+            const backdrop = document.getElementById("sidebarBackdrop");
+            const icon = document.getElementById("mobileMenuIcon");
+
+            if (sidebar.classList.contains("-translate-x-full")) {
+                sidebar.classList.remove("-translate-x-full");
+                backdrop.classList.remove("hidden");
+                icon.setAttribute("data-lucide", "x");
+            } else {
+                sidebar.classList.add("-translate-x-full");
+                backdrop.classList.add("hidden");
+                icon.setAttribute("data-lucide", "menu");
+            }
+            lucide.createIcons();
+        }
+
+        // CHECK AUTHENTICATION STATUS
+        function checkAuthSession() {
+            const isAuthenticated = StorageHelper.get("pangg_admin_auth") === "true";
+            if (isAuthenticated) {
+                document.getElementById("loginScreen").classList.add("hidden");
+                document.getElementById("mainDashboardWrapper").classList.remove("hidden");
+                initAdmin();
+            } else {
+                document.getElementById("loginScreen").classList.remove("hidden");
+                document.getElementById("mainDashboardWrapper").classList.add("hidden");
+            }
+        }
+
+        // LOGIN SUBMISSION HANDLER
+        function handleLoginSubmit(event) {
+            event.preventDefault();
+            const user = document.getElementById("loginUser").value.trim();
+            const pass = document.getElementById("loginPass").value.trim();
+            const btn = document.getElementById("btnLoginSubmit");
+
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></span> MENGECEK...`;
+
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    btn.disabled = false;
+                    btn.innerHTML = `MASUK KE PANEL <i data-lucide="log-in" class="w-4 h-4"></i>`;
+                    lucide.createIcons();
+
+                    if (response.success) {
+                        StorageHelper.set("pangg_admin_auth", "true");
+                        showToast("Kredensial valid! Membuka panel...");
+                        checkAuthSession();
+                    } else {
+                        alert(response.message || "Username atau password salah!");
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    btn.disabled = false;
+                    btn.innerHTML = `MASUK KE PANEL <i data-lucide="log-in" class="w-4 h-4"></i>`;
+                    lucide.createIcons();
+                    alert("Gagal koneksi sistem: " + err.message);
+                })
+                .verifyLoginGAS(user, pass);
+        }
+
+        // LOGOUT ACTION
+        function handleLogout() {
+            StorageHelper.remove("pangg_admin_auth");
+            document.getElementById("loginForm").reset();
+            showToast("Anda telah keluar dari sesi.");
+            checkAuthSession();
+        }
+
+        function initAdmin() {
+            fetchStats();
+            fetchSettings();
+            fetchProductsList();
+            fetchOrdersList();
+            fetchDiagnostics();
+            buildPhotoUploaders();
+            adaptSizeOption("TEE");
+        }
+
+        function fetchDiagnostics() {
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    if (response.success) {
+                        document.getElementById("diagSheetName").textContent = response.sheetName;
+                        document.getElementById("diagSheetUrl").href = response.sheetUrl;
+                        console.log("Sistem terhubung ke Sheet ID:", response.sheetId);
+                    } else {
+                        document.getElementById("diagSheetName").textContent = "Gagal memuat info koneksi";
+                        console.error("Gagal diagnostik:", response.message);
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    console.error("Gagal memanggil diagnostik:", err);
+                })
+                .getSystemDiagnosticsGAS();
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
+            document.getElementById(`tab-${tabName}`).classList.remove("hidden");
+
+            document.querySelectorAll(".nav-item").forEach(el => {
+                el.className = "nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-wider uppercase transition text-emerald-100 hover:bg-emerald-800/40";
+            });
+            document.getElementById(`nav-${tabName}`).className = "nav-item w-full flex items-center gap-3 px-4 py-3 rounded-lg text-xs font-bold tracking-wider uppercase transition bg-primary text-secondary shadow-md";
+
+            // Tutup mobile sidebar setelah tab diklik
+            const sidebar = document.getElementById("adminSidebar");
+            if (!sidebar.classList.contains("-translate-x-full") && window.innerWidth < 768) {
+                toggleMobileSidebar();
+            }
+        }
+
+        // =========================================================================
+        // DATA STATS FETCHING (DASHBOARD)
+        // =========================================================================
+        function fetchStats() {
+            showLoader();
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoader();
+                    if (response.success) {
+                        document.getElementById("statTotalProducts").textContent = response.data.totalProducts;
+                        document.getElementById("statTotalOrders").textContent = response.data.totalOrders;
+                        document.getElementById("statPendingOrders").textContent = response.data.pendingOrders;
+                        document.getElementById("statSoldOut").textContent = response.data.soldOutProducts;
+                    } else {
+                        showToast("Gagal memuat statistik: " + response.message);
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoader();
+                    showToast("Error sistem: " + err.message);
+                })
+                .getDashboardStatsGAS();
+        }
+
+        function fetchSettings() {
+            showLoader();
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoader();
+                    if (response.success) {
+                        globalSettings = response.data;
+                        const s = normalizeObjectKeys(globalSettings);
+                        
+                        document.getElementById("setWA").value = s.adminwhatsapp || "";
+                        document.getElementById("setIG").value = s.instagram || "";
+                        document.getElementById("setTikTok").value = s.tiktok || "";
+                        
+                        document.getElementById("setAdminUser").value = s.adminuser || "admin";
+                        document.getElementById("setAdminPass").value = s.adminpass || "12345";
+                        
+                        document.getElementById("setVouchers").value = (s.vouchers !== undefined && s.vouchers !== null) ? s.vouchers : "PANGG10:10,STREET50:50000";
+
+                        // Bersihkan uploader input file lama
+                        document.getElementById("logoSettingInput").value = "";
+                        document.getElementById("qrisSettingInput").value = "";
+                        document.getElementById("bannerSettingInput").value = "";
+
+                        if (s.logo) {
+                            document.getElementById("logoSettingPreview").src = toPublicDriveUrl(s.logo);
+                        } else {
+                            document.getElementById("logoSettingPreview").src = "https://placehold.co/200?text=PANGG";
+                        }
+                        if (s.qris) {
+                            document.getElementById("qrisSettingPreview").src = toPublicDriveUrl(s.qris);
+                        } else {
+                            document.getElementById("qrisSettingPreview").src = "https://placehold.co/200?text=QRIS";
+                        }
+                        if (s.banner) {
+                            document.getElementById("bannerSettingPreview").src = toPublicDriveUrl(s.banner);
+                        } else {
+                            document.getElementById("bannerSettingPreview").src = "https://placehold.co/1200x400?text=Banner";
+                        }
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoader();
+                    showToast("Error sistem: " + err.message);
+                })
+                .getSettingsGAS();
+        }
+
+        function fetchProductsList() {
+            showLoader();
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoader();
+                    if (response.success) {
+                        globalProducts = response.data || [];
+                        filterAdminProducts();
+                        renderCategoryStockChart();
+                    } else {
+                        showToast("Gagal memuat daftar produk.");
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoader();
+                    showToast("Error sistem: " + err.message);
+                })
+                .getProductsAdminGAS();
+        }
+
+        function filterAdminProducts() {
+            const query = document.getElementById("adminProductSearch").value.toLowerCase().trim();
+            const cat = document.getElementById("adminProductCategoryFilter").value;
+            
+            let filtered = [...globalProducts];
+            
+            if (cat !== "ALL") {
+                filtered = filtered.filter(item => {
+                    const norm = normalizeObjectKeys(item);
+                    return (norm.kategori || '').toUpperCase() === cat;
+                });
+            }
+            
+            if (query) {
+                filtered = filtered.filter(item => {
+                    const norm = normalizeObjectKeys(item);
+                    return (norm.nama || '').toLowerCase().includes(query) || (norm.id || '').toLowerCase().includes(query);
+                });
+            }
+            
+            renderProductsTable(filtered);
+        }
+
+        function renderCategoryStockChart() {
+            const area = document.getElementById("categoryStockDistributionArea");
+            area.innerHTML = "";
+            
+            const catMap = {};
+            globalProducts.forEach(item => {
+                const norm = normalizeObjectKeys(item);
+                const cat = (norm.kategori || "TEE").toUpperCase();
+                const stok = parseInt(norm.stok) || 0;
+                catMap[cat] = (catMap[cat] || 0) + stok;
+            });
+            
+            const categories = Object.keys(catMap);
+            if (categories.length === 0) {
+                area.innerHTML = `<p class="text-center text-gray-400 col-span-2 py-4">Belum ada data stok produk.</p>`;
+                return;
+            }
+            
+            const maxStok = Math.max(...Object.values(catMap), 1);
+            
+            categories.forEach(cat => {
+                const stok = catMap[cat];
+                const pct = (stok / maxStok) * 100;
+                const barHtml = `
+                    <div class="bg-lightGray p-4 rounded-xl space-y-2">
+                        <div class="flex justify-between text-[11px]">
+                            <span class="text-secondary font-bold">${cat}</span>
+                            <span class="text-gray-400">${stok} Pcs</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-secondary h-2 rounded-full transition-all duration-1000" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+                area.insertAdjacentHTML("beforeend", barHtml);
+            });
+        }
+
+        function renderProductsTable(list) {
+            const tbody = document.getElementById("tblProductBody");
+            tbody.innerHTML = "";
+
+            if (!list || list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-400 font-light">Tidak ada data produk ditemukan.</td></tr>`;
+                return;
+            }
+
+            list.forEach(rawItem => {
+                try {
+                    const p = normalizeObjectKeys(rawItem);
+                    
+                    const parsedHarga = parseFloat(p.harga);
+                    const parsedHargaFinal = parseFloat(p.hargafinal);
+                    
+                    const originalPrice = isNaN(parsedHarga) ? "0" : parsedHarga.toLocaleString("id-ID");
+                    const finalPrice = isNaN(parsedHargaFinal) ? "0" : parsedHargaFinal.toLocaleString("id-ID");
+                    
+                    const stokQty = parseInt(p.stok);
+                    const isSoldOut = isNaN(stokQty) ? true : stokQty <= 0;
+                    
+                    const statusBadge = p.status === "AKTIF" 
+                        ? `<span class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-1 rounded text-[10px] font-bold">AKTIF</span>`
+                        : `<span class="bg-gray-100 text-gray-500 border border-gray-200 px-2.5 py-1 rounded text-[10px] font-bold">ARSIP</span>`;
+                    
+                    const productPhoto = toPublicDriveUrl(p.foto1);
+
+                    const tr = `
+                        <tr class="hover:bg-lightGray transition border-b border-gray-100">
+                            <td class="p-4 flex items-center gap-3">
+                                <img src="${productPhoto || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=200'}" class="w-10 h-10 object-cover rounded-md border border-gray-100 bg-white shrink-0" onerror="this.src='https://placehold.co/100x100/F9F9F9/1F4D3A?text=No+Photo'">
+                                <div class="max-w-[150px] sm:max-w-xs font-medium">
+                                    <p class="font-semibold text-secondary truncate">${p.nama || "Tanpa Nama"}</p>
+                                    <p class="text-[10px] text-gray-400 font-light truncate">ID: ${p.id}</p>
+                                </div>
+                            </td>
+                            <td class="p-4 text-secondary font-bold">${p.kategori || "-"}</td>
+                            <td class="p-4 font-medium">
+                                <div class="space-y-0.5">
+                                    <p class="font-semibold text-secondary">Rp ${finalPrice}</p>
+                                    ${parseFloat(p.diskon) > 0 ? `<p class="text-[10px] text-red-500 line-through">Rp ${originalPrice} (${p.diskon}%)</p>` : ''}
+                                </div>
+                            </td>
+                            <td class="p-4 text-center font-bold text-gray-500">${p.ukuran || "-"}</td>
+                            <td class="p-4 text-center font-medium">
+                                <span class="${isSoldOut ? 'text-red-500 font-extrabold' : 'text-secondary'}">${isNaN(stokQty) ? 0 : stokQty} Pcs</span>
+                            </td>
+                            <td class="p-4 text-center">${statusBadge}</td>
+                            <td class="p-4 text-center">
+                                <div class="flex items-center justify-center gap-2">
+                                    <button onclick="openEditProduct('${p.id}')" class="p-2.5 bg-secondary/5 text-secondary rounded-lg hover:bg-secondary hover:text-white transition" title="Edit Artikel">
+                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="archiveProduct('${p.id}')" class="p-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition" title="Hapus Permanen">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML("beforeend", tr);
+                } catch (e) {
+                    console.error("Error saat merender baris produk:", e, rawItem);
+                }
+            });
+            lucide.createIcons();
+        }
+
+        function fetchOrdersList() {
+            showLoader();
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoader();
+                    if (response.success) {
+                        globalOrders = response.data || [];
+                        filterAdminOrders();
+                    } else {
+                        showToast("Gagal memuat daftar pesanan.");
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    showToast("Error sistem: " + err.message);
+                })
+                .getOrdersGAS();
+        }
+
+        function filterAdminOrders() {
+            const query = document.getElementById("adminOrderSearch").value.toLowerCase().trim();
+            const status = document.getElementById("adminOrderStatusFilter").value;
+            
+            let filtered = [...globalOrders];
+            
+            if (status !== "ALL") {
+                filtered = filtered.filter(item => {
+                    const norm = normalizeObjectKeys(item);
+                    return (norm.status || '').toUpperCase() === status;
+                });
+            }
+            
+            if (query) {
+                filtered = filtered.filter(item => {
+                    const norm = normalizeObjectKeys(item);
+                    return (norm.namapembeli || '').toLowerCase().includes(query) || 
+                           (norm.orderid || norm.id || '').toLowerCase().includes(query) ||
+                           (norm.whatsapp || '').includes(query);
+                });
+            }
+            
+            renderOrdersTable(filtered);
+        }
+
+        function renderOrdersTable(list) {
+            const tbody = document.getElementById("tblOrdersBody");
+            tbody.innerHTML = "";
+
+            if (!list || list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-400 font-light">Belum ada data pesanan masuk.</td></tr>`;
+                return;
+            }
+
+            list.forEach(rawOrder => {
+                try {
+                    const o = normalizeObjectKeys(rawOrder);
+                    const parsedTotal = parseFloat(o.total);
+                    const formattedTotal = isNaN(parsedTotal) ? "0" : parsedTotal.toLocaleString("id-ID");
+
+                    let statusClass = "bg-gray-100 text-gray-600 border-gray-200";
+                    if (o.status === "MENUNGGU VERIFIKASI") statusClass = "bg-purple-50 text-purple-600 border-purple-200";
+                    else if (o.status === "DIPROSES") statusClass = "bg-blue-50 text-blue-600 border-blue-200";
+                    else if (o.status === "DIKIRIM") statusClass = "bg-cyan-50 text-cyan-600 border-cyan-200";
+                    else if (o.status === "SELESAI") statusClass = "bg-emerald-50 text-emerald-600 border-emerald-200";
+                    else if (o.status === "DIBATALKAN") statusClass = "bg-red-50 text-red-600 border-red-200";
+
+                    const proofEl = o.buktitransfer 
+                        ? `<button onclick="openProofModal('${o.buktitransfer}')" class="text-secondary hover:text-primary underline font-bold flex items-center justify-center gap-1 mx-auto">
+                               <i data-lucide="image" class="w-4 h-4 text-emerald-600"></i> Lihat Bukti
+                           </button>`
+                        : `<span class="text-gray-400 italic font-light">-</span>`;
+
+                    const tr = `
+                        <tr class="hover:bg-lightGray transition border-b border-gray-100">
+                            <td class="p-4">
+                                <p class="font-bold text-secondary">${o.orderid || o.id || "-"}</p>
+                                <p class="text-[10px] text-gray-400 font-light mt-0.5">${o.tanggal || "-"}</p>
+                                ${o.trackingcode ? `<span class="mt-1 inline-block text-[9px] font-mono tracking-wider font-extrabold bg-secondary text-primary px-1.5 py-0.5 rounded">CODE: ${o.trackingcode}</span>` : ''}
+                            </td>
+                            <td class="p-4 space-y-0.5">
+                                <p class="font-bold text-secondary">${o.namapembeli || "-"}</p>
+                                <a href="https://wa.me/${(o.whatsapp || '').replace(/\D/g, '')}" target="_blank" class="text-[11px] text-green-600 hover:underline flex items-center gap-1">
+                                    <i data-lucide="phone" class="w-3.5 h-3.5"></i> ${o.whatsapp || "-"}
+                                </a>
+                                <p class="text-[10px] text-gray-400 font-light line-clamp-1" title="${o.alamat}">${o.provinsi || "-"} - ${o.alamat || "-"}</p>
+                            </td>
+                            <td class="p-4">
+                                <div class="max-w-xs text-xs text-secondary/80 font-light leading-relaxed">
+                                    <p class="font-medium text-secondary">${o.produk || "-"}</p>
+                                    ${o.catatan && o.catatan !== '-' ? `<p class="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded mt-1 font-semibold">Notes: ${o.catatan}</p>` : ''}
+                                </div>
+                            </td>
+                            <td class="p-4 text-right font-extrabold text-secondary">Rp ${formattedTotal}</td>
+                            <td class="p-4 text-center">${proofEl}</td>
+                            <td class="p-4 text-center">
+                                <span class="px-2.5 py-1 rounded-full text-[9px] font-black border uppercase tracking-wider ${statusClass}">${o.status || "-"}</span>
+                            </td>
+                            <td class="p-4 text-center">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <select onchange="updateOrderStatus('${o.orderid || o.id}', this.value)" class="text-[11px] bg-lightGray border border-gray-200 px-2 py-1.5 rounded focus:outline-none focus:border-secondary font-bold cursor-pointer">
+                                        <option value="" disabled selected>Update Status</option>
+                                        <option value="MENUNGGU PEMBAYARAN" ${o.status === 'MENUNGGU PEMBAYARAN' ? 'selected':''}>MENUNGGU PEMBAYARAN</option>
+                                        <option value="MENUNGGU VERIFIKASI" ${o.status === 'MENUNGGU VERIFIKASI' ? 'selected':''}>MENUNGGU VERIFIKASI</option>
+                                        <option value="DIPROSES" ${o.status === 'DIPROSES' ? 'selected':''}>DIPROSES</option>
+                                        <option value="DIKIRIM" ${o.status === 'DIKIRIM' ? 'selected':''}>DIKIRIM</option>
+                                        <option value="SELESAI" ${o.status === 'SELESAI' ? 'selected':''}>SELESAI</option>
+                                        <option value="DIBATALKAN" ${o.status === 'DIBATALKAN' ? 'selected':''}>DIBATALKAN</option>
+                                    </select>
+                                    <button onclick="followUpCustomer('${o.orderid || o.id}')" class="p-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition" title="Follow-up Chat WA">
+                                        <i data-lucide="message-square-text" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <button onclick="copyTrackingUrl('${o.trackingcode}')" class="p-2.5 bg-primary text-secondary hover:bg-yellow-500 rounded-lg transition" title="Salin Link Pelacakan">
+                                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.insertAdjacentHTML("beforeend", tr);
+                } catch (e) {
+                    console.error("Error rendering order line:", e, rawOrder);
+                }
+            });
+            lucide.createIcons();
+        }
+
+        let pendingStatusUpdate = null;
+        function updateOrderStatus(orderId, newStatus) {
+            if (newStatus === "DIKIRIM") {
+                document.getElementById("resiOrderId").value = orderId;
+                document.getElementById("resiStatusValue").value = newStatus;
+                document.getElementById("resiKurir").value = "JNT";
+                document.getElementById("resiNumber").value = "";
+                document.getElementById("resiInputModal").classList.remove("hidden");
+                return;
+            }
+            
+            executeOrderStatusUpdate(orderId, newStatus, "", "");
+        }
+
+        function closeResiModal() {
+            document.getElementById("resiInputModal").classList.add("hidden");
+        }
+
+        function submitResiStatus(event) {
+            event.preventDefault();
+            const orderId = document.getElementById("resiOrderId").value;
+            const status = document.getElementById("resiStatusValue").value;
+            const kurir = document.getElementById("resiKurir").value;
+            const resi = document.getElementById("resiNumber").value.trim();
+
+            closeResiModal();
+            executeOrderStatusUpdate(orderId, status, kurir, resi);
+        }
+
+        function executeOrderStatusUpdate(orderId, status, kurir, resi) {
+            showLoader();
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoader();
+                    if (response.success) {
+                        showToast(response.message);
+                        fetchStats();
+                        fetchOrdersList();
+                    } else {
+                        alert("Gagal mengubah status: " + response.message);
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoader();
+                    alert("Error sistem: " + err.message);
+                })
+                .updateOrderStatusGAS(orderId, status, kurir, resi);
+        }
+
+        function copyTrackingUrl(code) {
+            if (!code || code === "-") {
+                alert("Order ini belum memiliki kode pelacakan.");
+                return;
+            }
+            const base = window.location.href.split('?')[0].replace('admin.html', '').replace('exec', '');
+            const trackingUrl = `${base}tracking.html?code=${code}`;
+            
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = trackingUrl;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            
+            showToast("Link pelacakan berhasil disalin ke clipboard!");
+        }
+
+        function openProofModal(imgUrl) {
+            document.getElementById("proofModalImage").src = imgUrl;
+            document.getElementById("proofModal").classList.remove("hidden");
+        }
+
+        function closeProofModal() {
+            document.getElementById("proofModal").classList.add("hidden");
+        }
+
+        function followUpCustomer(orderId) {
+            const orderRaw = globalOrders.find(item => {
+                const norm = normalizeObjectKeys(item);
+                return (norm.orderid || norm.id) === orderId;
+            });
+            if (!orderRaw) return;
+
+            const order = normalizeObjectKeys(orderRaw);
+
+            let msg = "";
+            if (order.status === "MENUNGGU PEMBAYARAN" || order.status === "PENDING") {
+                msg = `Halo Kak ${order.namapembeli},\n\nTerima kasih telah memesan di PANGG.CASUALS.\n\nKami mengonfirmasi pesanan Kakak dengan ID: *${order.orderid || order.id}* sebesar *Rp ${parseFloat(order.total).toLocaleString('id-ID')}* masih menunggu pembayaran.\n\nApakah ada yang bisa kami bantu dalam proses transaksinya?`;
+            } else if (order.status === "DIPROSES") {
+                msg = `Halo Kak ${order.namapembeli},\n\nPembayaran Kakak untuk ID: *${order.orderid || order.id}* telah kami terima dan verifikasi.\n\nSaat ini paket Kakak sedang diproses pengemasan dengan standar premium kami.\n\nMohon ditunggu ya!`;
+            } else if (order.status === "DIKIRIM") {
+                msg = `Halo Kak ${order.namapembeli},\n\nKabar gembira! Pesanan Kakak dengan ID: *${order.orderid || order.id}* telah dikirim hari ini.\n\nTerima kasih banyak telah berbelanja di PANGG.CASUALS ✨`;
+            } else {
+                msg = `Halo Kak ${order.namapembeli},\n\nMenghubungi terkait transaksi pesanan Kakak di PANGG.CASUALS dengan ID: *${order.orderid || order.id}* status saat ini: *${order.status}*.\n\nJika ada pertanyaan jangan ragu hubungi kami kembali.`;
+            }
+
+            const waLink = `https://api.whatsapp.com/send?phone=${order.whatsapp.replace(/\D/g, '')}&text=${encodeURIComponent(msg)}`;
+            window.open(waLink, "_blank");
+        }
+
+        function previewSettingImage(input, previewElementId) {
+            // Deprecated - we use direct links now to bypass 50K limits
+        }
+
+        // FUNGSI KOMPRESI ASET BARU (Kompresi realtime 0.1 detik untuk uploader Logo, QRIS, & Banner)
+        async function previewAndCompressSettingImage(input, previewElementId, key) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const preview = document.getElementById(previewElementId);
+            const originalSrc = preview.src;
+            preview.src = "https://placehold.co/200?text=COMPRESSING...";
+
+            try {
+                // Konfigurasi ukuran optimal resolusi tinggi (Ultra Sharp)
+                let width = 1600;
+                let height = 1600;
+                if (key === "Banner") {
+                    width = 1920; // Banner Full HD sangat tajam dan stabil
+                    height = 1080;
+                }
+
+                // Kompresi berkualitas tinggi 85% (Bebas buram dan piksel pecah)
+                const compressedBase64 = await compressAndConvertToBase64(file, width, height, 0.85);
+                preview.src = compressedBase64;
+                
+                // Simpan biner terkompresi ke penampung sementara
+                settingsFilesBase64[key] = compressedBase64;
+                showToast(`Gambar ${key} berhasil diproses dengan kualitas tinggi!`);
+            } catch (err) {
+                console.error("Gagal kompresi aset:", err);
+                showToast("Gagal memproses file.");
+                preview.src = originalSrc;
+            }
+        }
+
+        async function saveStoreSettings(event) {
+            event.preventDefault();
+
+            const btn = document.getElementById("btnSaveSettings");
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span> MENYIMPAN...`;
+            showLoader();
+
+            const wa = document.getElementById("setWA").value.trim();
+            const ig = document.getElementById("setIG").value.trim();
+            const tik = document.getElementById("setTikTok").value.trim();
+            const vouchers = document.getElementById("setVouchers").value.trim();
+            
+            const newAdminUser = document.getElementById("setAdminUser").value.trim();
+            const newAdminPass = document.getElementById("setAdminPass").value.trim();
+
+            const payloadData = {
+                AdminWhatsapp: wa,
+                Instagram: ig,
+                TikTok: tik,
+                Vouchers: vouchers,
+                AdminUser: newAdminUser,
+                AdminPass: newAdminPass
+            };
+
+            // Kirim base64 hasil kompresi instan baru jika di-upload, jika tidak kirim data lama
+            payloadData.Logo = settingsFilesBase64.Logo || (globalSettings.Logo || "");
+            payloadData.Banner = settingsFilesBase64.Banner || (globalSettings.Banner || "");
+            payloadData.QRIS = settingsFilesBase64.QRIS || (globalSettings.QRIS || "");
+
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoader();
+                    btn.disabled = false;
+                    btn.innerHTML = `SIMPAN PENGATURAN TOKO <i data-lucide="check" class="w-4 h-4"></i>`;
+                    lucide.createIcons();
+
+                    if (response.success) {
+                        showToast(response.message);
+                        settingsFilesBase64 = {}; // Reset penampung
+                        fetchSettings();
+                    } else {
+                        alert("Gagal menyimpan: " + response.message);
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoader();
+                    btn.disabled = false;
+                    btn.innerHTML = `SIMPAN PENGATURAN TOKO <i data-lucide="check" class="w-4 h-4"></i>`;
+                    lucide.createIcons();
+                    alert("Error sistem: " + err.message);
+                })
+                .updateSettingsGAS(payloadData);
+        }
+
+        // =========================================================================
+        // MESIN KOMPRESI GAMBAR CLIENT-SIDE DENGAN RESOLUSI DAN KUALITAS TINGGI (PREMIUM RETINA)
+        // =========================================================================
+        function compressAndConvertToBase64(file, maxWidth = 1600, maxHeight = 1600, quality = 0.85) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let width = img.width;
+                        let height = img.height;
+
+                        // Pertahankan Aspect Ratio yang Sempurna
+                        if (width > height) {
+                            if (width > maxWidth) {
+                                height *= maxWidth / width;
+                                width = maxWidth;
+                            }
+                        } else {
+                            if (height > maxHeight) {
+                                width *= maxHeight / height;
+                                height = maxHeight;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // Ekspor sebagai JPG dengan Kompresi Kustom (Optimal & Ringan)
+                        const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                        resolve(compressedBase64);
+                    };
+                    img.onerror = function(err) { reject(err); };
+                    img.src = event.target.result;
+                };
+                reader.onerror = function(err) { reject(err); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ============================================
+        // FITUR BARU: MANAJEMEN DAN UPLOAD PRODUK AMAN
+        // ============================================
+        function buildPhotoUploaders() {
+            const area = document.getElementById("photoUploadersArea");
+            if (!area) return;
+            area.innerHTML = "";
+            for (let i = 1; i <= 10; i++) {
+                const div = `
+                    <div class="relative border-2 border-dashed border-gray-200 rounded-xl p-2 bg-lightGray hover:bg-gray-50 transition cursor-pointer flex flex-col items-center justify-center h-24 group overflow-hidden">
+                        <input type="file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10" onchange="handleProductPhotoChange(this, ${i})">
+                        <img id="prodFotoPreview${i}" class="absolute inset-0 w-full h-full object-cover hidden">
+                        <div id="prodFotoPlaceholder${i}" class="flex flex-col items-center justify-center text-center space-y-1">
+                            <i data-lucide="image-plus" class="w-5 h-5 text-gray-400 group-hover:scale-110 transition-transform"></i>
+                            <span class="text-[9px] text-gray-400 font-bold uppercase">Foto ${i}</span>
+                        </div>
+                    </div>
+                `;
+                area.insertAdjacentHTML("beforeend", div);
+            }
+            if (typeof lucide !== "undefined") {
+                lucide.createIcons();
+            }
+        }
+
+        async function handleProductPhotoChange(input, index) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const placeholder = document.getElementById("prodFotoPlaceholder" + index);
+            const originalHTML = placeholder.innerHTML;
+            placeholder.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-secondary"></span><p class="text-[8px] mt-1 text-gray-400">COMPRESS...</p>`;
+
+            try {
+                // Kompresi instan di memori browser dengan resolusi 1600px & Kualitas Premium 85%
+                const compressedBase64 = await compressAndConvertToBase64(file, 1600, 1600, 0.85);
+                
+                const preview = document.getElementById("prodFotoPreview" + index);
+                preview.src = compressedBase64;
+                preview.classList.remove("hidden");
+                placeholder.classList.add("hidden");
+                
+                // Simpan hasil kompresi berukuran super ringan (~100KB)
+                productFilesBase64["Foto" + index] = compressedBase64;
+            } catch (err) {
+                console.error("Gagal kompresi foto:", err);
+                showToast("Gagal memproses foto.");
+                placeholder.innerHTML = originalHTML;
+                lucide.createIcons();
+            }
+        }
+
+        function adaptSizeOption(category) {
+            const area = document.getElementById("sizeOptionsArea");
+            if (!area) return;
+            area.innerHTML = "";
+            
+            const sizes = (category === "SHOES") ? SHOE_SIZES : CLOTHING_SIZES;
+            sizes.forEach(size => {
+                const btn = `
+                    <button type="button" onclick="toggleSizeSelect(this, '${size}')" class="size-opt-btn border border-gray-200 hover:border-secondary px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:text-secondary transition bg-white" data-size="${size}">
+                        ${size}
+                    </button>
+                `;
+                area.insertAdjacentHTML("beforeend", btn);
+            });
+        }
+
+        function toggleSizeSelect(btn, size) {
+            const idx = selectedProductSizes.indexOf(size);
+            if (idx > -1) {
+                selectedProductSizes.splice(idx, 1);
+                btn.className = "size-opt-btn border border-gray-200 hover:border-secondary px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 hover:text-secondary transition bg-white";
+            } else {
+                selectedProductSizes.push(size);
+                btn.className = "size-opt-btn border-2 border-secondary px-3 py-1.5 rounded-lg text-xs font-bold text-secondary transition bg-secondary/5";
+            }
+        }
+
+        function openProductModal() {
+            document.getElementById("prodID").value = "";
+            document.getElementById("productForm").reset();
+            
+            document.getElementById("prodNama").value = "";
+            document.getElementById("prodHarga").value = "";
+            document.getElementById("prodDiskon").value = "0";
+            document.getElementById("prodStok").value = "";
+            document.getElementById("prodKondisi").value = "";
+            document.getElementById("prodDeskripsi").value = "";
+            
+            calculateFinalPrice();
+            adaptSizeOption("TEE");
+            selectedProductSizes = [];
+            
+            productFilesBase64 = {};
+            for (let i = 1; i <= 10; i++) {
+                const preview = document.getElementById("prodFotoPreview" + i);
+                const placeholder = document.getElementById("prodFotoPlaceholder" + i);
+                preview.src = "";
+                preview.classList.add("hidden");
+                placeholder.classList.remove("hidden");
+            }
+
+            document.getElementById("productModalTitle").textContent = "Tambah Produk Baru";
+            document.getElementById("productModal").classList.remove("hidden");
+        }
+
+        function closeProductModal() {
+            document.getElementById("productModal").classList.add("hidden");
+        }
+
+        function openEditProduct(id) {
+            const product = globalProducts.find(p => {
+                const norm = normalizeObjectKeys(p);
+                return norm.id === id;
+            });
+            if (!product) return;
+            const p = normalizeObjectKeys(product);
+
+            document.getElementById("prodID").value = p.id;
+            document.getElementById("prodNama").value = p.nama || "";
+            document.getElementById("prodKategori").value = p.kategori || "TEE";
+            document.getElementById("prodHarga").value = p.harga || "";
+            document.getElementById("prodDiskon").value = p.diskon || "0";
+            document.getElementById("prodStok").value = p.stok || "0";
+            document.getElementById("prodKondisi").value = p.kondisi || "";
+            document.getElementById("prodStatus").value = p.status || "AKTIF";
+            document.getElementById("prodDeskripsi").value = p.deskripsi || "";
+            
+            calculateFinalPrice();
+            adaptSizeOption(p.kategori || "TEE");
+
+            selectedProductSizes = [];
+            const sizesStr = p.ukuran || "";
+            if (sizesStr) {
+                selectedProductSizes = sizesStr.split(",").map(s => s.trim());
+                document.querySelectorAll(".size-opt-btn").forEach(btn => {
+                    const size = btn.getAttribute("data-size");
+                    if (selectedProductSizes.includes(size)) {
+                        btn.className = "size-opt-btn border-2 border-secondary px-3 py-1.5 rounded-lg text-xs font-bold text-secondary transition bg-secondary/5";
+                    }
+                });
+            }
+
+            productFilesBase64 = {};
+            for (let i = 1; i <= 10; i++) {
+                const preview = document.getElementById("prodFotoPreview" + i);
+                const placeholder = document.getElementById("prodFotoPlaceholder" + i);
+                const rawPhotoUrl = p["foto" + i];
+                
+                if (rawPhotoUrl) {
+                    preview.src = toPublicDriveUrl(rawPhotoUrl);
+                    preview.classList.remove("hidden");
+                    placeholder.classList.add("hidden");
+                } else {
+                    preview.src = "";
+                    preview.classList.add("hidden");
+                    placeholder.classList.remove("hidden");
+                }
+            }
+
+            document.getElementById("productModalTitle").textContent = "Edit Artikel Produk";
+            document.getElementById("productModal").classList.remove("hidden");
+        }
+
+        async function handleProductSubmit(event) {
+            event.preventDefault();
+            
+            const btn = document.getElementById("btnSubmitProduct");
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span> RINCIAN DISIMPAN...`;
+            showLoader();
+
+            const id = document.getElementById("prodID").value;
+            const payload = {
+                ID: id,
+                Nama: document.getElementById("prodNama").value.trim(),
+                Kategori: document.getElementById("prodKategori").value,
+                Harga: parseFloat(document.getElementById("prodHarga").value) || 0,
+                Diskon: parseFloat(document.getElementById("prodDiskon").value) || 0,
+                Stok: parseInt(document.getElementById("prodStok").value) || 0,
+                Ukuran: selectedProductSizes.join(", "),
+                Kondisi: document.getElementById("prodKondisi").value.trim(),
+                Status: document.getElementById("prodStatus").value,
+                Deskripsi: document.getElementById("prodDeskripsi").value.trim()
+            };
+
+            const isEdit = id !== "";
+            
+            const successHandler = async function(response) {
+                if (response.success) {
+                    const productId = response.id || id;
+                    
+                    // Kumpulkan semua foto baru yang dipilih untuk diunggah secara asinkron berurutan (Sequential Upload)
+                    const photoIndicesToUpload = [];
+                    for (let i = 1; i <= 10; i++) {
+                        if (productFilesBase64["Foto" + i]) {
+                            photoIndicesToUpload.push(i);
+                        }
+                    }
+                    
+                    if (photoIndicesToUpload.length > 0) {
+                        for (let step = 0; step < photoIndicesToUpload.length; step++) {
+                            const idx = photoIndicesToUpload[step];
+                            btn.innerHTML = `<span class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span> UNGGAH FOTO ${step + 1}/${photoIndicesToUpload.length}...`;
+                            
+                            await new Promise((resolvePhoto, rejectPhoto) => {
+                                google.script.run
+                                    .withSuccessHandler(function(photoRes) {
+                                        if (photoRes.success) {
+                                            resolvePhoto();
+                                        } else {
+                                            console.error("Gagal unggah foto index: " + idx, photoRes.message);
+                                            resolvePhoto(); // Lanjutkan mengunggah foto lainnya meskipun satu foto gagal
+                                        }
+                                    })
+                                    .withFailureHandler(function(err) {
+                                        console.error("Gagal koneksi server pada foto index: " + idx, err);
+                                        resolvePhoto(); // Lanjutkan mengunggah foto lainnya
+                                    })
+                                    .uploadProductPhotoGAS(productId, idx, productFilesBase64["Foto" + idx]);
+                            });
+                        }
+                    }
+                    
+                    hideLoader();
+                    btn.disabled = false;
+                    btn.innerHTML = `SIMPAN PRODUK <i data-lucide="save" class="w-4 h-4"></i>`;
+                    lucide.createIcons();
+
+                    showToast(isEdit ? "Katalog produk berhasil diperbarui!" : "Produk baru berhasil ditambahkan!");
+                    closeProductModal();
+                    fetchProductsList();
+                    fetchStats();
+                } else {
+                    hideLoader();
+                    btn.disabled = false;
+                    btn.innerHTML = `SIMPAN PRODUK <i data-lucide="save" class="w-4 h-4"></i>`;
+                    lucide.createIcons();
+                    alert("Gagal menyimpan rincian produk: " + response.message);
+                }
+            };
+
+            const failureHandler = function(err) {
+                hideLoader();
+                btn.disabled = false;
+                btn.innerHTML = `SIMPAN PRODUK <i data-lucide="save" class="w-4 h-4"></i>`;
+                lucide.createIcons();
+                alert("Error sistem: " + err.message);
+            };
+
+            if (isEdit) {
+                google.script.run
+                    .withSuccessHandler(successHandler)
+                    .withFailureHandler(failureHandler)
+                    .updateProductGAS(payload);
+            } else {
+                google.script.run
+                    .withSuccessHandler(successHandler)
+                    .withFailureHandler(failureHandler)
+                    .createProductGAS(payload);
+            }
+        }
+
+        function archiveProduct(id) {
+            if (!confirm("Apakah Anda yakin ingin menghapus produk ini dari database?")) return;
+            showLoader();
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoader();
+                    if (response.success) {
+                        showToast(response.message);
+                        fetchProductsList();
+                        fetchStats();
+                    } else {
+                        alert("Gagal menghapus produk: " + response.message);
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    hideLoader();
+                    alert("Error sistem: " + err.message);
+                })
+                .deleteProductGAS(id);
+        }
+
+        function calculateFinalPrice() {
+            const hg = parseFloat(document.getElementById("prodHarga").value) || 0;
+            const dk = parseFloat(document.getElementById("prodDiskon").value) || 0;
+            const fn = hg - (hg * (dk / 100));
+            document.getElementById("prodHargaFinal").value = "Rp " + fn.toLocaleString("id-ID");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById("customToast");
+            const toastMsg = document.getElementById("toastMessage");
+
+            toastMsg.textContent = msg;
+            toast.classList.remove("opacity-0", "translate-y-10", "pointer-events-none");
+            
+            setTimeout(() => {
+                toast.classList.add("opacity-0", "translate-y-10", "pointer-events-none");
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
